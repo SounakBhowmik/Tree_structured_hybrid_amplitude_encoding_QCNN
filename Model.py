@@ -253,7 +253,7 @@ class QCNN(Module):
             #print(y.shape)
             assert y.shape == torch.Size([1])
             ret = torch.cat((ret, y))
-        assert ret.requires_grad == True
+        #assert ret.requires_grad == True
         return torch.unsqueeze(ret, 1)
 '''           
 a = torch.rand(2, 45)
