@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.svm import SVC
 from sklearn.metrics import accuracy_score
+from sklearn.preprocessing import StandardScaler
 
 # Variables for train and test dataset file paths
 train_csv_path = '../Datasets/MNIST/mnist_train.csv'  # Replace with your training CSV path
@@ -22,14 +23,31 @@ pca_results_folder = '../Datasets/MNIST/pca_45'  # Replace with your new folder 
 # Create the folder if it doesn't exist
 if not os.path.exists(pca_results_folder):
     os.makedirs(pca_results_folder)
+#%%
+def standardize_dataframe(df):
+
+  # Select only numeric columns
+  numeric_cols = df.select_dtypes(include='number').columns.tolist()
+  # Create a StandardScaler object
+  scaler = StandardScaler()
+  # Fit the scaler to the data and transform it
+  df_scaled = scaler.fit_transform(df[numeric_cols])
+  # Create a new DataFrame with the scaled data
+  df_standardized = pd.DataFrame(df_scaled, columns=numeric_cols, index=df.index)
+  # Combine the standardized numeric columns with the original non-numeric columns
+  df_standardized = pd.concat([df_standardized, df.select_dtypes(exclude='number')], axis=1)
+  return df_standardized
+
+
 
 
 #%% Step:2 Perform PCA to reduce dimension to 45
 # Load train dataset
-train_df = pd.read_csv(train_csv_path)
+train_df =pd.read_csv(train_csv_path)
+
 
 # Separate features and labels
-X_train = train_df.drop(columns=['label'])  # Assuming 'label' column exists
+X_train = standardize_dataframe( train_df.drop(columns=['label']))  # Assuming 'label' column exists
 y_train = train_df['label']
 
 # Perform PCA to reduce to 45 dimensions
@@ -148,7 +166,8 @@ def prepare_binary_classification_dataset(X, y, target_class):
 
 # Load the test dataset and apply PCA
 test_df = pd.read_csv(test_csv_path)
-X_test = test_df.drop(columns=['label']).values
+
+X_test = standardize_dataframe(test_df.drop(columns=['label'])).values
 y_test = test_df['label'].values
 
 X_test_pca = pca.transform(X_test)
@@ -172,9 +191,9 @@ def prepare_binary_classification_loader(X, y, target_class, batch_size=64):
 
 # Replace SVC with a neural network model for binary classification
 input_size = 45  # Since PCA reduced the dataset to 45 dimensions
-batch_size = 64
+batch_size = 32
 epochs = 10
-learning_rate = 0.01
+learning_rate = 0.001
 
 
 
