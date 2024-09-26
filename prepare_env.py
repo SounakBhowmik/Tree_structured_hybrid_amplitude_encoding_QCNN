@@ -52,7 +52,7 @@ y_train = train_df['label']
 
 # Perform PCA to reduce to 45 dimensions
 pca = PCA(n_components=45)
-X_train_pca = pca.fit_transform(X_train)
+X_train_pca = pca.fit_transform(X_train.values)
 
 # Save the PCA reduced data with labels
 pca_train_data = pd.DataFrame(X_train_pca)
@@ -61,7 +61,7 @@ pca_train_data.to_csv(os.path.join(pca_results_folder, 'train_pca.csv'), index=F
 
 # Plot the first two principal components
 plt.figure(figsize=(10, 7))
-sns.scatterplot(x=X_train_pca[:, 0], y=X_train_pca[:, 1], hue=y_train, palette='tab10', s=60)
+sns.scatterplot(x=X_train_pca[:, 0], y=X_train_pca[:, 3], hue=y_train, palette='tab10', s=60)
 plt.title('PCA: First Two Dimensions Colored by Labels')
 plt.xlabel('PCA Component 1')
 plt.ylabel('PCA Component 2')
@@ -96,8 +96,8 @@ from tqdm import tqdm
 from Model import QCNN
 
 
-
-# Define a simple feedforward neural network for binary classification
+'''
+# Define a simple feedforward neural network for binary classification #Testing
 class BinaryClassifierNN(nn.Module):
     def __init__(self, input_size):
         super(BinaryClassifierNN, self).__init__()
@@ -110,12 +110,14 @@ class BinaryClassifierNN(nn.Module):
         x = torch.relu(self.fc2(x))
         x = torch.sigmoid(self.fc3(x))  # Use sigmoid for binary output
         return x
-
+'''
 # Function to train the model
-def train_model(model, train_loader, criterion, optimizer, epochs=10):
-    model.train()
+def train_model(model, train_loader, val_loader, criterion, optimizer, epochs=10):
+    
+    val_accuracies = []
     for epoch in tqdm(range(epochs)):
         running_loss = 0.0
+        model.train()
         for inputs, labels in train_loader:
             optimizer.zero_grad()
             outputs = model(inputs)
@@ -123,8 +125,15 @@ def train_model(model, train_loader, criterion, optimizer, epochs=10):
             loss.backward()
             optimizer.step()
             running_loss += loss.item()
-
+            
+        # Evaluate model every epoch
+        val_accuracy = evaluate_model(model, val_loader)
+        val_accuracies.append(val_accuracy)
+        print(f"Class {class_label} vs others test accuracy: {val_accuracy:.4f}")
+        
+        
         print(f'Epoch [{epoch+1}/{epochs}], Loss: {running_loss / len(train_loader):.4f}')
+    return val_accuracies
 
 # Function to evaluate the model
 def evaluate_model(model, test_loader):
@@ -198,19 +207,19 @@ learning_rate = 0.001
 
 
 test_accuracies = []
-
+val_scores = []
 # Perform binary classification for each class
 for class_label in range(10):
     # Prepare DataLoader for training data
     train_loader = prepare_binary_classification_loader(X_train_split.values, y_train_split.values, class_label)
-    
+    val_loader = prepare_binary_classification_loader(X_val_split.values, y_val_split.values, class_label)
     # Initialize the neural network model, loss function, and optimizer
     model = QCNN()
     criterion = nn.BCELoss()  # Binary Cross Entropy Loss
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
     
     # Train the neural network model
-    train_model(model, train_loader, criterion, optimizer, epochs=epochs)
+    val_scores.append(train_model(model, train_loader, val_loader, criterion, optimizer, epochs=epochs))
     
     # Prepare DataLoader for test data
     test_loader = prepare_binary_classification_loader(X_test_pca, y_test, class_label)
