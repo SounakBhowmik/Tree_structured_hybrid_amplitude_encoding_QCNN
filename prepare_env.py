@@ -201,7 +201,7 @@ def prepare_binary_classification_loader(X, y, target_class, batch_size=64):
 # Replace SVC with a neural network model for binary classification
 input_size = 45  # Since PCA reduced the dataset to 45 dimensions
 batch_size = 32
-epochs = 10
+epochs = 50
 learning_rate = 0.001
 
 
@@ -234,7 +234,11 @@ average_accuracy = np.mean(test_accuracies)
 print(f"Average test accuracy across all classes: {average_accuracy:.4f}")
 
 
+#%% Saving results
+import numpy as np
+val_scores = np.array(val_scores)
+test_accuracies = np.array(test_accuracies)
 
-
-#%% Step 4: Binary classification problem and accuracy measurement for each class
+np.save('Results/val_scores.npy', val_scores, allow_pickle=True)
+np.save('Results/test_accuracies.npy', test_accuracies, allow_pickle=True)
 
